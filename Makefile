@@ -20,6 +20,8 @@ image: $(BUILD_DIR)/noyau.bin
 run: image
 	qemu-system-i386 -drive if=pflash,format=raw,unit=0,file=$(OVMFDIR)/OVMF_CODE.fd,readonly=on -drive if=pflash,format=raw,unit=1,file=$(OVMFDIR)/OVMF_VARS.fd -cdrom noyau.iso
 
+run_legacy: image
+	qemu-system-i386 -cdrom noyau.iso
 
 $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
