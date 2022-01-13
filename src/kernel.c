@@ -1,23 +1,11 @@
 #include <stdbool.h>
+#include <printf.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <multiboot.h>
+#include <fb.h>
 
 #define IS_SET(flags, bit) ((flags) & (1 << (bit)))
-
-struct rgb_framebuffer {
-	void    *base;
-	uint32_t pitch;
-	uint32_t width;
-	uint32_t height;
-	uint8_t  bpp;
-	uint8_t  red_pos;
-	uint8_t  red_size;
-	uint8_t  green_pos;
-	uint8_t  green_size;
-	uint8_t  blue_pos;
-	uint8_t  blue_size;
-};
 
 struct rgb_framebuffer rgb_fb;
 
@@ -83,7 +71,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 		}
 	}
 
-	for (unsigned x = 0; x < rgb_fb.width / 2; x++) {
-		set_pixel(&rgb_fb, x, 50, ((1 << rgb_fb.blue_size) - 1) << rgb_fb.blue_pos);
-	}
+	printf("hello, world\n");
+	printf("here is an integer: %d\n", 123);
+	printf("here is an unsigned long: 0x%x", rgb_fb.base);
 }

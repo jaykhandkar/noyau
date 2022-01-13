@@ -1,12 +1,12 @@
 I686GNU ?= i686-elf
 
-CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Iinclude
+CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Iinclude -DPRINTF_DISABLE_SUPPORT_FLOAT -DPRINTF_DISABLE_SUPPORT_LONG_LONG
 ASMFLAGS = -Iinclude
 LDFLAGS = -ffreestanding -O2 -lgcc -nostdlib
 
 BUILD_DIR = build
 SRC_DIR = src
-OVMFDIR = OVMF
+OVMFDIR = meta/OVMF
 
 all: $(BUILD_DIR)/noyau.bin
 
@@ -30,10 +30,14 @@ $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 $(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.s
 	$(I686GNU)-as $(ASMFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/font.o: meta/font.psf
+	objcopy -O elf32-i386 -B i386 -I binary $< $(BUILD_DIR)/font.o
+
 C_FILES = $(wildcard $(SRC_DIR)/*.c)
 ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
 OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_c.o)
 OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
+OBJ_FILES += $(BUILD_DIR)/font.o
 
-$(BUILD_DIR)/noyau.bin: $(SRC_DIR)/linker.ld $(OBJ_FILES)
+$(BUILD_DIR)/noyau.bin: $(SRC_DIR)/linker.ld $(OBJ_FILES) 
 	$(I686GNU)-gcc $(LDFLAGS) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/noyau.bin $(OBJ_FILES)
