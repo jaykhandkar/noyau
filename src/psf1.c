@@ -19,14 +19,15 @@ void putchar(struct rgb_framebuffer *fb, uint8_t c, uint32_t cx, uint32_t cy, ui
 	if (c >= 0x80)
 		return;
 	struct psf1_header *header = (struct psf1_header *) &_binary_meta_font_psf_start;
-	uint8_t *glyphptr = (uint8_t *)&_binary_meta_font_psf_start + sizeof(struct psf1_header) + c * header->charsize;
+	uint8_t charsize = header->charsize;
+	uint8_t *glyphptr = (uint8_t *)&_binary_meta_font_psf_start + sizeof(struct psf1_header) + c * charsize;
 
-	for (uint32_t y = 0; y < header->charsize; y++) {
+	for (uint32_t y = 0; y < charsize; y++) {
 		for (uint32_t x = 0; x < 8; x++) {
 			if ((*glyphptr & (0x80 >> x)) > 0)
-				set_pixel(fb, cx * 8 + x, cy * header->charsize + y, fg);
+				set_pixel(fb, cx * 8 + x, cy * charsize + y, fg);
 			else
-				set_pixel(fb, cx * 8 + x, cy * header->charsize + y, bg);
+				set_pixel(fb, cx * 8 + x, cy * charsize + y, bg);
 		}
 		glyphptr++;
 	}

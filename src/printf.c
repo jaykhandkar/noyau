@@ -303,7 +303,6 @@ static size_t _ntoa_long(out_fct_type out, char* buffer, size_t idx, size_t maxl
 
 // internal itoa for 'long long' type
 #if defined(PRINTF_SUPPORT_LONG_LONG)
-//#if 0
 static size_t _ntoa_long_long(out_fct_type out, char* buffer, size_t idx, size_t maxlen, unsigned long long value, bool negative, unsigned long long base, unsigned int prec, unsigned int width, unsigned int flags)
 {
   char buf[PRINTF_NTOA_BUFFER_SIZE];
@@ -913,3 +912,34 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
   va_end(va);
   return ret;
 } 
+
+uint64_t __udivmoddi4(uint64_t num, uint64_t den, uint64_t *rem_p)
+ {
+   uint64_t quot = 0, qbit = 1;
+
+   if ( den == 0 ) {
+     return 1/((unsigned)den); /* Intentional divide by zero, without
+                                  triggering a compiler warning which
+                                  would abort the build */
+   }
+
+   /* Left-justify denominator and count shift */
+   while ( (int64_t)den >= 0 ) {
+     den <<= 1;
+     qbit <<= 1;
+   }
+
+   while ( qbit ) {
+     if ( den <= num ) {
+       num -= den;
+       quot += qbit;
+     }
+     den >>= 1;
+     qbit >>= 1;
+   }
+
+   if ( rem_p )
+     *rem_p = num;
+
+   return quot;
+ }

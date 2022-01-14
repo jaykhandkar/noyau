@@ -1,6 +1,6 @@
 I686GNU ?= i686-elf
 
-CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Iinclude -DPRINTF_DISABLE_SUPPORT_FLOAT -DPRINTF_DISABLE_SUPPORT_LONG_LONG
+CFLAGS = -std=gnu99 -ffreestanding -O2 -Wall -Wextra -Iinclude -DPRINTF_DISABLE_SUPPORT_FLOAT 
 ASMFLAGS = -Iinclude
 LDFLAGS = -ffreestanding -O2 -lgcc -nostdlib
 
@@ -18,7 +18,7 @@ image: $(BUILD_DIR)/noyau.bin
 	grub-mkrescue -o noyau.iso iso
 
 run: image
-	qemu-system-i386 -drive if=pflash,format=raw,unit=0,file=$(OVMFDIR)/OVMF_CODE.fd,readonly=on -drive if=pflash,format=raw,unit=1,file=$(OVMFDIR)/OVMF_VARS.fd -cdrom noyau.iso
+	qemu-system-i386 -m 512M -drive if=pflash,format=raw,unit=0,file=$(OVMFDIR)/OVMF_CODE.fd,readonly=on -drive if=pflash,format=raw,unit=1,file=$(OVMFDIR)/OVMF_VARS.fd -cdrom noyau.iso
 
 run_legacy: image
 	qemu-system-i386 -cdrom noyau.iso
