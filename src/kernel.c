@@ -104,7 +104,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 	printf("hello, world\n");
 	printf("here is an integer: %d\n", 123);
 	printf("here is an unsigned long: 0x%x\n", rgb_fb.base);
-	printf("dimensions of framebuffer received: %dx%d", rgb_fb.width, rgb_fb.height);
-	while(1)
-		;
+	printf("dimensions of framebuffer received: %dx%d\n", rgb_fb.width, rgb_fb.height);
+	printf("mbi = 0x%x\n", mbi);
+	printf("framebuffer at 0x%x\n", rgb_fb.base);
 }
