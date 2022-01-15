@@ -51,6 +51,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 		return;
 
 	mbi = (multiboot_info_t *) addr;
+	setup_pae_paging();
 
 	if (IS_SET(mbi->flags, 12)) {
 		switch (mbi->framebuffer_type) {
