@@ -16,9 +16,10 @@ void setup_pae_paging()
 void *pae_map(uint64_t phys_addr)
 {
 	uint64_t phys_pfn = phys_addr / (2 * MB);
-	page_dir[1] = phys_pfn | 0b10000011;
-	page_dir[2] = (phys_pfn + 2 *MB) | 0b10000011;
-	page_dir[3] = (phys_pfn + 4 * MB) | 0b10000011;
-	page_dir[4] = (phys_pfn + 6 * MB) | 0b10000011;
-	return (void *)(2 * MB) + (phys_addr - phys_pfn);
+	uint64_t phys_pf_addr = phys_pfn * (2 * MB);
+	page_dir[1] = phys_pf_addr | 0b10000011;
+	page_dir[2] = (phys_pf_addr + 2 *MB) | 0b10000011;
+	page_dir[3] = (phys_pf_addr + 4 * MB) | 0b10000011;
+	page_dir[4] = (phys_pf_addr + 6 * MB) | 0b10000011;
+	return (void *)(2 * MB) + (phys_addr - phys_pf_addr);
 }
