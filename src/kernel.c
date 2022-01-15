@@ -61,7 +61,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 				if ((mbi->framebuffer_addr & 0xFFFFFFFF00000000) != 0) /*somehow, grub messed and gave us a framebuffer that can't be 
 											 accessed in protected mode without PAE*/
 					return;
-				rgb_fb.base = (void *) (unsigned long)mbi->framebuffer_addr;
+				rgb_fb.base = (void *) (unsigned long)pae_map(mbi->framebuffer_addr);
 				rgb_fb.pitch = mbi->framebuffer_pitch;
 				rgb_fb.width = mbi->framebuffer_width;
 				rgb_fb.height = mbi->framebuffer_height;
@@ -80,7 +80,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 		return; /*no output capabilities :( */
 	}
 
-	if (IS_SET(mbi->flags, 6)) {
+	/*if (IS_SET(mbi->flags, 6)) {
 		char *mem_type[6] = { 0, "MULTIBOOT_MEMORY_AVAILABLE", "MULTIBOOT_MEMORY_RESERVED", "MULTIBOOT_MEMORY_ACPI_RECLAIMABLE",
 			"MULTIBOOT_MEMORY_NVS", "MULTIBOOT_MEMORY_BADRAM" };
 		uint64_t total_usable_mem = 0;
@@ -95,7 +95,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 					mmt->type < 6 && mmt->type > 0 ? mem_type[mmt->type] : "(undefined)");
 		}
 		printf("total usable memory = %d MB\n", total_usable_mem / MB);
-	}
+	}*/
 
 	printf("hello, world\n");
 	printf("here is an integer: %d\n", 123);
