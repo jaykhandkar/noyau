@@ -12,6 +12,9 @@
 
 struct rgb_framebuffer rgb_fb;
 
+extern char _kernelstart;
+extern char _kernelend;
+
 void set_pixel(struct rgb_framebuffer *fb, uint32_t x, uint32_t y, uint32_t color)
 {
 	switch (fb->bpp) {
@@ -96,8 +99,12 @@ void kernel_main(unsigned long magic, unsigned long addr)
 		printf("total usable memory = %d MB\n", total_usable_mem / MB);
 	}
 
+	printf("kernel loaded at: 0x%x\n", &_kernelstart);
+	printf("kernel ends at 0x%x\n", &_kernelend);
 	printf("hello, world\n");
 	printf("here is an integer: %d\n", 123);
 	printf("here is an unsigned long: 0x%x\n", rgb_fb.base);
 	printf("dimensions of framebuffer received: %dx%d", rgb_fb.width, rgb_fb.height);
+	while(1)
+		;
 }
