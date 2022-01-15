@@ -57,6 +57,9 @@ void kernel_main(unsigned long magic, unsigned long addr)
 			case MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED: /* not implemented */
 				return;
 			case MULTIBOOT_FRAMEBUFFER_TYPE_RGB:
+				if ((mbi->framebuffer_addr & 0xFFFFFFFF00000000) != 0) /*somehow, grub messed and gave us a framebuffer that can't be 
+											 accessed in protected mode without PAE*/
+					return;
 				rgb_fb.base = (void *) (unsigned long)mbi->framebuffer_addr;
 				rgb_fb.pitch = mbi->framebuffer_pitch;
 				rgb_fb.width = mbi->framebuffer_width;
@@ -95,5 +98,6 @@ void kernel_main(unsigned long magic, unsigned long addr)
 
 	printf("hello, world\n");
 	printf("here is an integer: %d\n", 123);
-	printf("here is an unsigned long: 0x%x", rgb_fb.base);
+	printf("here is an unsigned long: 0x%x\n", rgb_fb.base);
+	printf("dimensions of framebuffer received: %dx%d", rgb_fb.width, rgb_fb.height);
 }
