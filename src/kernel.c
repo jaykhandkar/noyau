@@ -2,11 +2,12 @@
 #include <printf.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <multiboot.h>
+#include <multiboot2.h>
 #include <fb.h>
 
 #define IS_SET(flags, bit) ((flags) & (1 << (bit)))
 
+#define KB (1 << 10)
 #define MB (1 << 20)
 #define GB (1 << 30)
 
@@ -48,63 +49,81 @@ void set_pixel(struct rgb_framebuffer *fb, uint32_t x, uint32_t y, uint32_t colo
 
 void kernel_main(unsigned long magic, unsigned long addr) 
 {
-	multiboot_info_t *mbi;
+	struct multiboot_tag *tag;
+	struct multiboot_tag_mmap *mmap_tag = NULL;
+	uint32_t mbi_size;
 
-	if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
+	if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) 
 		return;
 
-	mbi = (multiboot_info_t *) addr;
+	if (addr & 0x7)
+		return;
 
-	if (IS_SET(mbi->flags, 12)) {
-		switch (mbi->framebuffer_type) {
-			case MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED: /* not implemented */
-				return;
-			case MULTIBOOT_FRAMEBUFFER_TYPE_RGB:
-				if ((mbi->framebuffer_addr & 0xFFFFFFFF00000000) != 0) /*somehow, grub messed and gave us a framebuffer that can't be 
-											 accessed in protected mode without PAE*/
-					return;
-				rgb_fb.base = (void *) (unsigned long)mbi->framebuffer_addr;
-				rgb_fb.pitch = mbi->framebuffer_pitch;
-				rgb_fb.width = mbi->framebuffer_width;
-				rgb_fb.height = mbi->framebuffer_height;
-				rgb_fb.bpp = mbi->framebuffer_bpp;
-				rgb_fb.red_pos = mbi->framebuffer_red_field_position;
-				rgb_fb.red_size = mbi->framebuffer_red_mask_size;
-				rgb_fb.blue_pos = mbi->framebuffer_blue_field_position;
-				rgb_fb.blue_size = mbi->framebuffer_blue_mask_size;
-				rgb_fb.green_pos = mbi->framebuffer_green_field_position;
-				rgb_fb.green_size = mbi->framebuffer_green_mask_size;
+	mbi_size = *(uint32_t *) addr;
+	for (tag = (struct multiboot_tag *) (addr + 8); tag->type != MULTIBOOT_TAG_TYPE_END;
+			tag = (struct multiboot_tag *)((void *)tag + ((tag->size + 7) & ~7))) {
+		switch (tag->type) {
+			case MULTIBOOT_TAG_TYPE_FRAMEBUFFER:
+				{
+					struct multiboot_tag_framebuffer *tagfb = 
+						(struct multiboot_tag_framebuffer *) tag;
+					switch( tagfb->common.framebuffer_type) {
+						case MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED:
+							return;
+						case MULTIBOOT_FRAMEBUFFER_TYPE_RGB:
+							if ((tagfb->common.framebuffer_addr & 0xFFFFFFFF00000000) != 0)
+								return;
+							rgb_fb.base = (void *)(unsigned long)tagfb->common.framebuffer_addr;
+							rgb_fb.bpp = tagfb->common.framebuffer_bpp;
+							rgb_fb.pitch = tagfb->common.framebuffer_pitch;
+							rgb_fb.height = tagfb->common.framebuffer_height;
+							rgb_fb.width = tagfb->common.framebuffer_width;
+							rgb_fb.blue_pos = tagfb->framebuffer_blue_field_position;
+							rgb_fb.blue_size = tagfb->framebuffer_blue_mask_size;
+							rgb_fb.red_pos = tagfb->framebuffer_red_field_position;
+							rgb_fb.red_size = tagfb->framebuffer_red_mask_size;
+							rgb_fb.green_pos = tagfb->framebuffer_green_field_position;
+							rgb_fb.green_size = tagfb->framebuffer_green_mask_size;
+							break;
+						case MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT:
+							return;
+						default:
+							return;
+					}
+
+				}
 				break;
-			case MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT: /* shouldn't happen, we requested multiboot to change video mode */
-				return;
+			case MULTIBOOT_TAG_TYPE_MMAP:
+				mmap_tag = (struct multiboot_tag_mmap *) tag;
+				break;
 		}
-	} else {
-		return; /*no output capabilities :( */
 	}
+	printk("hello, kernel\n");
 
-	if (IS_SET(mbi->flags, 6)) {
+	if (mmap_tag != NULL) {
 		char *mem_type[6] = { 0, "MULTIBOOT_MEMORY_AVAILABLE", "MULTIBOOT_MEMORY_RESERVED", "MULTIBOOT_MEMORY_ACPI_RECLAIMABLE",
 			"MULTIBOOT_MEMORY_NVS", "MULTIBOOT_MEMORY_BADRAM" };
+		multiboot_memory_map_t *mmap;
 		uint64_t total_usable_mem = 0;
 
-		for (unsigned int i = 0; i < mbi->mmap_length; i += sizeof(multiboot_memory_map_t)) {
-			multiboot_memory_map_t *mmt = (multiboot_memory_map_t *) (mbi->mmap_addr + i);
+		for (mmap = mmap_tag->entries;(void *) mmap < ((void *) mmap_tag + mmap_tag->size);
+				mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
+			if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE)
+				total_usable_mem += mmap->len;
 
-			if (mmt->type == MULTIBOOT_MEMORY_AVAILABLE)
-				total_usable_mem += mmt->len;
-
-			printf("start addr: 0x%llx | length: 0x%llx | size: 0x%x | type: %s\n", mmt->addr, mmt->len, mmt->size, 
-					mmt->type < 6 && mmt->type > 0 ? mem_type[mmt->type] : "(undefined)");
+			printk("start addr: 0x%llx | length: 0x%llx | type: %s\n", mmap->addr, mmap->len, 
+					mmap->type < 6 && mmap->type > 0 ? mem_type[mmap->type] : "(undefined)");	
 		}
-		printf("total usable memory = %d MB\n", total_usable_mem / MB);
+
+		printk("total usable memory = %d MB\n", total_usable_mem / MB);
+	} else {
+		printk("no memory map received from grub\n");
 	}
 
-	printf("kernel loaded at: 0x%x\n", &_kernelstart);
-	printf("kernel ends at 0x%x\n", &_kernelend);
-	printf("hello, world\n");
-	printf("here is an integer: %d\n", 123);
-	printf("here is an unsigned long: 0x%x\n", rgb_fb.base);
-	printf("dimensions of framebuffer received: %dx%d\n", rgb_fb.width, rgb_fb.height);
-	printf("mbi = 0x%x\n", mbi);
-	printf("framebuffer at 0x%x\n", rgb_fb.base);
+	printk("kernel loaded at: 0x%x\n", &_kernelstart);
+	printk("kernel ends at 0x%x\n", &_kernelend);
+	printk("dimensions of framebuffer received: %dx%d\n", rgb_fb.width, rgb_fb.height);
+	printk("mbi = 0x%x\n", addr);
+	printk("mbi size = %d KB\n", mbi_size / KB);
+	printk("framebuffer at 0x%x\n", rgb_fb.base);
 }

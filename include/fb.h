@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 struct rgb_framebuffer {
-	void    *base;
+	void     *base;
 	uint32_t pitch;
 	uint32_t width;
 	uint32_t height;

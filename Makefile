@@ -18,7 +18,7 @@ image: $(BUILD_DIR)/noyau.bin
 	grub-mkrescue -o noyau.iso iso
 
 run: image
-	qemu-system-i386 -m 512M -drive if=pflash,format=raw,unit=0,file=$(OVMFDIR)/OVMF_CODE.fd,readonly=on -drive if=pflash,format=raw,unit=1,file=$(OVMFDIR)/OVMF_VARS.fd -cdrom noyau.iso
+	qemu-system-i386 -drive if=pflash,format=raw,unit=0,file=$(OVMFDIR)/OVMF_CODE.fd,readonly=on -drive if=pflash,format=raw,unit=1,file=$(OVMFDIR)/OVMF_VARS.fd -cdrom noyau.iso
 
 run_legacy: image
 	qemu-system-i386 -cdrom noyau.iso
@@ -27,8 +27,8 @@ $(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
 	$(I686GNU)-gcc $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.s
-	$(I686GNU)-as $(ASMFLAGS) -c $< -o $@
+$(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
+	$(I686GNU)-gcc $(ASMFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/font.o: meta/font.psf
 	objcopy -O elf32-i386 -B i386 -I binary $< $(BUILD_DIR)/font.o
