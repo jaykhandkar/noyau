@@ -38,6 +38,13 @@ void _putchar(char c)
 	uint32_t white = (((1 << rgb_fb.red_size) - 1) << rgb_fb.red_pos) | (((1 << rgb_fb.blue_size) - 1) << rgb_fb.blue_pos)
 	       | (((1 << rgb_fb.green_size) - 1) << rgb_fb.green_pos);
 	uint32_t black = 0;
+	struct psf1_header *header = (struct psf1_header *) &_binary_meta_font_psf_start;
+	uint8_t charsize = header->charsize;
+
+	if (cx > (rgb_fb.width / charsize)) {
+		cy += 1;
+		cx = 0;
+	}
 
 	if (c == '\n') {
 		cy += 1;

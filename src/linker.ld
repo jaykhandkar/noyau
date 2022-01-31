@@ -5,12 +5,11 @@ SECTIONS
 	. = 1M;
  
 	_kernelstart = .;
-	.text BLOCK(4K) : ALIGN(4K)
+	.text   BLOCK(4K) : ALIGN(4K)
 	{
 		*(.multiboot)
 		*(.text)
 	}
- 
 	.rodata BLOCK(4K) : ALIGN(4K)
 	{
 		*(.rodata)
