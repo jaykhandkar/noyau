@@ -18,36 +18,11 @@ struct rgb_framebuffer rgb_fb;
 extern char _kernelstart;
 extern char _kernelend;
 
-void set_pixel(struct rgb_framebuffer *fb, uint32_t x, uint32_t y, uint32_t color)
-{
-	switch (fb->bpp) {
-		case 8:
-		{
-			uint8_t *pixel = (uint8_t *)(fb->base + fb->pitch * y + x);
-			*pixel = color;
-		}
-			break;
-		case 15:
-		case 16:
-		{
-			uint16_t *pixel = (uint16_t *)(fb->base + fb->pitch * y + x * 2);
-			*pixel = color;
-		}
-			break;
-		case 24:
-		{
-			uint32_t *pixel = (uint32_t *)(fb->base + fb->pitch * y + x * 3);
-			*pixel = (color & 0xffffff) | (*pixel & 0xff000000);
-		}
-			break;
-		case 32:
-		{
-			uint32_t *pixel = (uint32_t *)(fb->base + fb->pitch * y + x * 4);
-			*pixel = color;
-		}
-			break;	
-	}
-}
+void setup_boot_pgtables();
+void load_gdt(void *entry, unsigned long addr);
+
+int have_longmode();
+int have_cpuid();
 
 void kernel_main(unsigned long magic, unsigned long addr) 
 {
@@ -55,6 +30,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 	struct multiboot_tag_mmap *mmap_tag = NULL;
 	struct multiboot_tag_module *mod = NULL;
 	uint32_t mbi_size;
+	void *kernel_entry;
 
 	if (magic != MULTIBOOT2_BOOTLOADER_MAGIC) 
 		return;
@@ -137,7 +113,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 		printk("\nmultiboot module received: start = 0x%x | end = 0x%x | cmdline = \"%s\"\n", mod->mod_start, mod->mod_end,
 				mod->cmdline);
 		Elf64_Ehdr *hdr = (Elf64_Ehdr *) mod->mod_start;
-		Elf64_Phdr *phdrs = (Elf64_Phdr *) (mod->mod_start + hdr->e_phoff);
+		Elf64_Phdr *phdrs = (Elf64_Phdr *) (unsigned long)(mod->mod_start + hdr->e_phoff);
 		size_t sz = hdr->e_phnum * hdr->e_phentsize;
 		
 		if (memcmp(&hdr->e_ident[EI_MAG0], ELFMAG, SELFMAG) != 0 || hdr->e_ident[EI_CLASS] != ELFCLASS64 || 
@@ -150,6 +126,7 @@ void kernel_main(unsigned long magic, unsigned long addr)
 		}
 		
 		printk("entry = 0x%llx\n", hdr->e_entry);
+		kernel_entry = (void *) (unsigned long) (hdr->e_entry - 0xffff800000000000);
 		for (Elf64_Phdr *phdr = phdrs;(char *) phdr < (char *)phdrs + sz; 
 				phdr = (Elf64_Phdr *)((void *)phdr + hdr->e_phentsize)) {
 			switch(phdr->p_type) {
@@ -169,6 +146,31 @@ void kernel_main(unsigned long magic, unsigned long addr)
 					break;
 			}
 		}
+	} else {
+		return;
 	}
 
+	if (have_cpuid() != 0) {
+		printk("\nprocessor does not support cpuid\n");
+		return;
+	}
+
+	switch (have_longmode()) {
+		case 0:
+			printk("\nswitching to long mode...\n");
+			break;
+		case 1:
+			printk("\nprocessor does not support long mode\n");
+			return;
+		case 2:
+			printk("\nprocessor does not support extended cpuid functions\n");
+			return;
+	}
+
+	setup_boot_pgtables(); /* now in 32 bit compatibility submode */
+
+	/* setup a 64 bit code segment and far jmp to it*/
+	load_gdt(kernel_entry, addr);
+
 }
+

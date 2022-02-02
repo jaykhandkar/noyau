@@ -14,6 +14,38 @@ static uint32_t cy;
 
 void set_pixel(struct rgb_framebuffer *, uint32_t, uint32_t, uint32_t);
 
+void set_pixel(struct rgb_framebuffer *fb, uint32_t x, uint32_t y, uint32_t color)
+{
+	switch (fb->bpp) {
+		case 8:
+		{
+			uint8_t *pixel = (uint8_t *)(fb->base + fb->pitch * y + x);
+			*pixel = color;
+		}
+			break;
+		case 15:
+		case 16:
+		{
+			uint16_t *pixel = (uint16_t *)(fb->base + fb->pitch * y + x * 2);
+			*pixel = color;
+		}
+			break;
+		case 24:
+		{
+			uint32_t *pixel = (uint32_t *)(fb->base + fb->pitch * y + x * 3);
+			*pixel = (color & 0xffffff) | (*pixel & 0xff000000);
+		}
+			break;
+		case 32:
+		{
+			uint32_t *pixel = (uint32_t *)(fb->base + fb->pitch * y + x * 4);
+			*pixel = color;
+		}
+			break;	
+	}
+}
+
+
 void putchar(struct rgb_framebuffer *fb, uint8_t c, uint32_t cx, uint32_t cy, uint32_t fg, uint32_t bg)
 {
 	if (c >= 0x80)
