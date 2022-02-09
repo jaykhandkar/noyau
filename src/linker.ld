@@ -1,10 +1,10 @@
 ENTRY(_start)
- 
+
 SECTIONS
 {
 	. = 1M;
  
-	_kernelstart = .;
+	_loaderstart = .;
 	.text   BLOCK(4K) : ALIGN(4K)
 	{
 		*(.multiboot)
@@ -25,5 +25,5 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 	}
-	_kernelend = .;
+	_loaderend = .;
 }

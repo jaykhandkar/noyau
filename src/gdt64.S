@@ -10,6 +10,10 @@
 .set LONG_MODE, 0x20
 
 .section .data
+.global gdt64
+.global gdt64.pointer
+.global gdt64.code
+.global gdt64.data
 gdt64:
 	.equ gdt64.null, . - gdt64	
 	.quad 0

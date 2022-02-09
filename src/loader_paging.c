@@ -2,7 +2,7 @@
 
 /* set up enough page tables to be able to jump to 64 bit kernel
  * identity map first 10MB and map first 10 MB of kernel virtual 
- * address space */
+ * address space to first 10 MB of physical memory*/
 
 #define MB (1 << 20)
 

@@ -2,6 +2,7 @@
 .global have_longmode
 .type have_longmode, @function
 have_longmode:
+	push %ebx
 	mov $0x80000000, %eax
 	cpuid
 	cmp $0x80000001, %eax 
@@ -13,12 +14,15 @@ have_longmode:
 	jz .nolongmode
  	
 	mov $0x0, %eax
+	pop %ebx
 	ret
 .nolongmode:
 	mov $0x1, %eax
+	pop %ebx
 	ret
 .noxtend:
 	mov $0x2, %eax
+        pop %ebx
 	ret
 
 .global have_cpuid

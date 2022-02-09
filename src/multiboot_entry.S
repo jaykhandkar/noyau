@@ -1,20 +1,9 @@
 #define ASM_FILE 1
 #include <multiboot2.h>
-/* multiboot constants */
-/*.set ALIGN,    1<<0             
-.set MEMINFO,  1<<1             
-.set VIDEO,    1<<2
-.set FLAGS,    ALIGN | MEMINFO | VIDEO
-.set MAGIC,    0x1BADB002       
-.set CHECKSUM, -(MAGIC + FLAGS) 
-.set MULTIBOOT2_HEADER_MAGIC,   0xe85250d6 
-.set GRUB_MULTIBOOT_ARCHITECTURE_I386, 0
-.set MULTIBOOT_HEADER_TAG_FRAMEBUFFER, 5
-.set MULTIBOOT_HEADER_TAG_OPTIONAL, 1
-.set MULTIBOOT_HEADER_TAG_END, 0*/
  
 /* multiboot header */
 .section .multiboot
+.code32
 .align 8
 multiboot_header:
 .long MULTIBOOT2_HEADER_MAGIC
@@ -43,6 +32,7 @@ stack_bottom:
 stack_top:
  
 .section .text
+.code32
 .global _start
 .type _start, @function
 _start:
@@ -54,7 +44,7 @@ _start:
 	pushl %ebx
 	pushl %eax
 	
-	call kernel_main
+	call loader_main
  
 	cli
 1:	hlt
