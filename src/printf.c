@@ -952,7 +952,7 @@ uint64_t __udivdi3(uint64_t a, uint64_t b)
 
 uint64_t __umoddi3(uint64_t a, uint64_t b)
 {
-	uint64_t r;
+	uint64_t r = 0;
         __udivmoddi4(a, b, &r);
 	return r;
 }

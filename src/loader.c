@@ -162,7 +162,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 			(unsigned long) &_loaderend < (unsigned long) kernel_end) || 
 			((unsigned long) &_loaderstart >= (unsigned long) kernel_begin &&
 			(unsigned long) &_loaderstart < (unsigned long) kernel_end) ) {
-		printk("\nerror: loader and kernel overlap\n");
+		printk("\nloader: error: loader and kernel overlap\n");
 		return;
 	}
 
@@ -171,13 +171,13 @@ void loader_main(unsigned long magic, unsigned long addr)
 			(unsigned long) kernel_begin < (unsigned long) &_loaderend) || 
 			((unsigned long) kernel_end >= (unsigned long) &_loaderstart &&
 			(unsigned long) kernel_end < (unsigned long) &_loaderend) ) {
-		printk("\nerror: loader and kernel overlap\n");
+		printk("\nloader: error: loader and kernel overlap\n");
 		return;
 	}
 
 	/* finally, make sure kernel fits within first 10 MB and wants to be loaded after loader */
 	if ( (unsigned long) kernel_end >= (10 * MB) || (unsigned long)kernel_begin < (unsigned long) &_loaderstart) {
-		printk("\nerror: kernel cannot fit within first 10MB\n");
+		printk("\nloader: error: kernel cannot fit within first 10MB\n");
 		return;
 	}
 
@@ -193,20 +193,13 @@ void loader_main(unsigned long magic, unsigned long addr)
 					(unsigned long)&_loaderend < mmap->addr + mmap->len )) {
 			loader_mmap_region = mmap;
 		}
-		if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
-			if (mmap->len > kernel_elf_size && kernel_module_space == NULL
-					&& (mmap->addr & 0xffffffff00000000) == 0
-					&& (mmap->addr > (unsigned long)&_loaderend || 
-						(unsigned long) mmap->addr + kernel_elf_size < (unsigned long)&_loaderstart))
-				kernel_module_space = (void *) (unsigned long) mmap->addr;
-		}
 
 	}
 	printk("\nloader mmap region = 0x%x\n", loader_mmap_region->addr);
 
 	/* ensure region where kernel wants to be loaded is normal memory */
-	if (kernel_mmap_region == NULL || kernel_mmap_region->type != MULTIBOOT_MEMORY_AVAILABLE) {
-		printk("\nregion where kernel wants to be loaded does not lie in normal memory\n");
+	if (loader_mmap_region == NULL || kernel_mmap_region == NULL || kernel_mmap_region->type != MULTIBOOT_MEMORY_AVAILABLE) {
+		printk("\nloader: region where kernel wants to be loaded does not lie in normal memory\n");
 		return;
 	}
 
@@ -273,19 +266,19 @@ void loader_main(unsigned long magic, unsigned long addr)
 	}
 
 	if (have_cpuid() != 0) {
-		printk("\nprocessor does not support cpuid\n");
+		printk("\nloader: processor does not support cpuid\n");
 		return;
 	}
 
 	switch (have_longmode()) {
 		case 0:
-			printk("\nswitching to long mode...\n");
+			printk("\nloader: switching to long mode...\n");
 			break;
 		case 1:
-			printk("\nprocessor does not support long mode\n");
+			printk("\nloader: processor does not support long mode\n");
 			return;
 		case 2:
-			printk("\nprocessor does not support extended cpuid functions\n");
+			printk("\nloader: processor does not support extended cpuid functions\n");
 			return;
 		default:
 			return;
