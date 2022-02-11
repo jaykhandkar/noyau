@@ -10,11 +10,15 @@ test:
 
 .section .text
 .global entry64
+.code64
 entry64:
 	movabs $stack_top, %rsp
 
-	/* this is where we would call our C code */
+	movabs $fix_rip, %rax
+	jmp *%rax
+fix_rip:
+	call kernel_entry 
 
 	cli
-1:	hlt
-	jmp 1b
+2:	hlt
+	jmp 2b

@@ -45,6 +45,13 @@ void set_pixel(struct rgb_framebuffer *fb, uint32_t x, uint32_t y, uint32_t colo
 	}
 }
 
+void clear(struct rgb_framebuffer *fb)
+{
+	for (uint32_t i = 0; i < fb->height; i++)
+		for (uint32_t j = 0; j < fb->width; j++)
+			set_pixel(fb, j, i, 0);
+}
+
 
 void putchar(struct rgb_framebuffer *fb, uint8_t c, uint32_t cx, uint32_t cy, uint32_t fg, uint32_t bg)
 {

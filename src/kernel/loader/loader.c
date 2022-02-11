@@ -6,6 +6,7 @@
 #include <string.h>
 #include <fb.h>
 #include <elf.h>
+#include <cpuid.h>
 
 #define IS_SET(flags, bit) ((flags) & (1 << (bit)))
 
@@ -143,11 +144,9 @@ void loader_main(unsigned long magic, unsigned long addr)
 	if (memcmp(&hdr->e_ident[EI_MAG0], ELFMAG, SELFMAG) != 0 || hdr->e_ident[EI_CLASS] != ELFCLASS64 || 
 			hdr->e_ident[EI_DATA] != ELFDATA2LSB || hdr->e_type != ET_EXEC || hdr->e_machine != EM_X86_64 ||
 			hdr->e_version != EV_CURRENT) {
-		printk("invalid ELF64 file received\n");
+		printk("loader: error: invalid ELF64 file received\n");
 		return;
-	} else {
-		printk("\nkernel elf received\n");
-	}
+	} 
 
 	for (Elf64_Phdr *phdr = phdrs;(char *) phdr < (char *)phdrs + sz; 
 			phdr = (Elf64_Phdr *)((void *)phdr + hdr->e_phentsize)) {
@@ -235,7 +234,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 
 		/* no region found */
 		if (kernel_module_space == NULL) {
-			printk("\nloader: cannot find region to store kernel elf file\n");
+			//printk("\nloader: cannot find region to store kernel elf file\n");
 			return;
 		}
 		
@@ -245,6 +244,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 	}
 	
 	kernel_entry = (void *) (unsigned long) (hdr->e_entry - PAGE_OFFSET);
+	printk("\nloader: segments described by program headers in kernel elf file:\n");
 	for (Elf64_Phdr *phdr = phdrs;(char *) phdr < (char *)phdrs + sz; 
 			phdr = (Elf64_Phdr *)((void *)phdr + hdr->e_phentsize)) {
 		switch(phdr->p_type) {
@@ -282,6 +282,13 @@ void loader_main(unsigned long magic, unsigned long addr)
 			return;
 		default:
 			return;
+	}
+	unsigned int eax, unused, edx;
+	__get_cpuid(0x80000001, &eax, &unused, &unused, &edx);
+	/* make sure processor supports huge pages since kernel needs it */
+	if (!IS_SET(edx, 26)) {
+		printk("\n1 Gb pages not supported\n");
+		return;
 	}
 
 	setup_boot_pgtables(); /* now in 32 bit compatibility submode */

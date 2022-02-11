@@ -44,7 +44,7 @@ string:
 load_gdt:
 	push %ebp
 	mov %esp, %ebp
-	lgdt (gdt64.pointer)
+	lgdt gdt64.pointer
 	mov $gdt64.data, %ax
 	mov %ax, %ds
 	mov %ax, %ss

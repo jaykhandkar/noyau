@@ -6,10 +6,10 @@
 
 #define MB (1 << 20)
 
-uint64_t pml4t[512] __attribute__((aligned(0x1000)));;
+uint64_t pml4t[512] __attribute__((aligned(0x1000)));
 uint64_t pdpt[512] __attribute__((aligned(0x1000)));
 uint64_t pdt[512] __attribute__((aligned(0x1000)));
-uint64_t pgt[10][512] __attribute__((aligned(0x1000))); /* one table maps 2 MB */
+uint64_t pgt[5][512] __attribute__((aligned(0x1000))); /* one table maps 2 MB */
 
 void setup_boot_pgtables()
 {
