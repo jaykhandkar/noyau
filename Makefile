@@ -2,9 +2,9 @@ I686GNU ?= i686-elf
 x86_64GNU ?= x86_64-elf
 
 # flags for 32 bit loader
-CFLAGS = -O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Iinclude -DPRINTF_DISABLE_SUPPORT_FLOAT 
-ASMFLAGS = -Iinclude -ffreestanding -nostdlib
-LDFLAGS = -ffreestanding -lgcc -nostdlib -lgcc
+LOADERCFLAGS = -O2 -std=gnu99 -ffreestanding -nostdlib -Wall -Wextra -Iinclude -DPRINTF_DISABLE_SUPPORT_FLOAT -DLOADER
+LOADERASMFLAGS = -Iinclude -ffreestanding -nostdlib
+LOADERLDFLAGS = -ffreestanding -lgcc -nostdlib -lgcc
 
 # flags for 64 bit kernel
 KERNEL64ASMFLAGS = -m64 -ffreestanding -z max-page-size=0x1000 -mno-red-zone -mno-mmx\
@@ -35,7 +35,7 @@ KERNEL_C_FILES = $(wildcard $(KERNEL_DIR)/*.c)
 LIB_C_FILES = $(wildcard $(LIB_DIR)/*.c)
 LIB_OBJ_FILES = $(LIB_C_FILES:$(LIB_DIR)/%.c=$(BUILD_DIR)/%_c.o)
 
-LOADER_LIB_FILES =  $(LIB_DIR)/string.c $(LIB_DIR)/psf1.c
+LOADER_LIB_FILES =  $(LIB_DIR)/string.c $(LIB_DIR)/psf1.c $(LIB_DIR)/printf.c
 
 LOADER_OBJ_FILES = $(LOADER_C_FILES:$(LOADER_DIR)/%.c=$(BUILD_DIR)/%_c32.o)
 LOADER_OBJ_FILES += $(LOADER_LIB_FILES:$(LIB_DIR)/%.c=$(BUILD_DIR)/%_c32.o)
@@ -63,15 +63,15 @@ $(BUILD_DIR)/%_s.o: $(KERNEL_DIR)/%.S
 # recipes to build 32 bit loader
 $(BUILD_DIR)/%_c32.o: $(LOADER_DIR)/%.c
 	mkdir -p $(@D)
-	$(I686GNU)-gcc $(CFLAGS) -c $< -o $@
+	$(I686GNU)-gcc $(LOADERCFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%_c32.o: $(LIB_DIR)/%.c
 	mkdir -p $(@D)
-	$(I686GNU)-gcc $(CFLAGS) -c $< -o $@
+	$(I686GNU)-gcc $(LOADERCFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%_s32.o: $(LOADER_DIR)/%.S
 	mkdir -p $(@D)
-	$(I686GNU)-gcc $(ASMFLAGS) -c $< -o $@
+	$(I686GNU)-gcc $(LOADERASMFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/font32.o: meta/font.psf
 	mkdir -p $(@D)
@@ -82,7 +82,7 @@ $(BUILD_DIR)/font64.o: meta/font.psf
 	objcopy -O elf64-x86-64 -B i386 -I binary $< $(BUILD_DIR)/font64.o
 
 $(BUILD_DIR)/loader.bin: $(LOADER_DIR)/linker.ld $(LOADER_OBJ_FILES) 
-	$(I686GNU)-gcc $(LDFLAGS) -T $(LOADER_DIR)/linker.ld -o $@ $(LOADER_OBJ_FILES)
+	$(I686GNU)-gcc $(LOADERLDFLAGS) -T $(LOADER_DIR)/linker.ld -o $@ $(LOADER_OBJ_FILES)
 
 $(BUILD_DIR)/kernel64.bin: $(KERNEL_DIR)/kernel_link.ld $(KERNEL_OBJ_FILES) 
 	$(x86_64GNU)-gcc -T $(KERNEL_DIR)/kernel_link.ld -o $@ $(KERNEL_OBJ_FILES) $(LD64FLAGS)

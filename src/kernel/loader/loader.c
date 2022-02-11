@@ -19,6 +19,10 @@ struct rgb_framebuffer rgb_fb;
 extern char _loaderstart;
 extern char _loaderend;
 
+#ifdef LOADER
+int have_loader_console;
+#endif
+
 void setup_boot_pgtables();
 void load_gdt(void *entry, unsigned long addr);
 
@@ -65,8 +69,11 @@ void loader_main(unsigned long magic, unsigned long addr)
 					case MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED:
 						return;
 					case MULTIBOOT_FRAMEBUFFER_TYPE_RGB:
-						if ((tagfb->common.framebuffer_addr & 0xFFFFFFFF00000000) != 0)
-							return;
+#ifdef LOADER	
+						/* grub doesn't guarantee that the framebuffer can be accessed without PAE
+						 * if not we cannot use the framebuffer in the loader*/
+						have_loader_console = (tagfb->common.framebuffer_addr & 0xFFFFFFFF00000000) == 0;
+#endif
 						rgb_fb.base = (void *)(unsigned long)tagfb->common.framebuffer_addr;
 						rgb_fb.bpp = tagfb->common.framebuffer_bpp;
 						rgb_fb.pitch = tagfb->common.framebuffer_pitch;
@@ -234,7 +241,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 
 		/* no region found */
 		if (kernel_module_space == NULL) {
-			//printk("\nloader: cannot find region to store kernel elf file\n");
+			printk("\nloader: cannot find region to store kernel elf file\n");
 			return;
 		}
 		

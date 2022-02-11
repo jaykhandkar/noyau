@@ -8,6 +8,7 @@ extern char _binary_meta_font_psf_start;
 extern char _binary_meta_font_psf_end;
 
 extern struct rgb_framebuffer rgb_fb;
+extern int have_loader_console;
 
 static uint32_t cx;
 static uint32_t cy;
@@ -79,6 +80,11 @@ void _putchar(char c)
 	uint32_t black = 0;
 	struct psf1_header *header = (struct psf1_header *) &_binary_meta_font_psf_start;
 	uint8_t charsize = header->charsize;
+
+#ifdef LOADER
+	if (!have_loader_console)
+		return;
+#endif
 
 	if (cx > (rgb_fb.width / charsize)) {
 		cy += 1;

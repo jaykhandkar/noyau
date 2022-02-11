@@ -1,3 +1,4 @@
 .ccls
 build
 *.iso
+iso/boot/*.bin
