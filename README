@@ -1,0 +1,14 @@
+Hobby kernel for AMD64.
+-> Uses a 32 bit multiboot compliant bootstrap/loader to load the 64
+   bit kernel elf, enables long mode and jumps to the entry point.
+-> Loader encourages a higher-half kernel lying at -128TB (fixed) in
+   the 64 bit (canonical) virtual address space.
+-> Uses PSF1 fonts and the framebuffer received from multiboot to
+   print to the screen.
+
+To build, a gcc toolchain for the targets i686-elf and x86_64-elf is
+required. gcc 11.2.0 and binutils 2.37 are known to work.
+
+-> The target all will build both loader and kernel.
+-> The target image will generate a bootable iso image.
+-> The target run will launch qemu with the iso image.
