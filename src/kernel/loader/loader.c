@@ -290,7 +290,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 		default:
 			return;
 	}
-	unsigned int eax, unused, edx;
+	unsigned int eax, unused, edx = 0;
 	__get_cpuid(0x80000001, &eax, &unused, &unused, &edx);
 	/* make sure processor supports huge pages since kernel needs it */
 	if (!IS_SET(edx, 26)) {

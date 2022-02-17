@@ -103,5 +103,5 @@ run: image
 	qemu-system-x86_64 $(QEMUARGS) 
 
 run_legacy: image
-	qemu-system-x86_64 -m 4G -machine q35 -cpu core2duo -cdrom noyau.iso
+	qemu-system-x86_64 -m 4G -machine q35 -cpu EPYC -cdrom noyau.iso
 
