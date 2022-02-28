@@ -13,7 +13,7 @@ KERNEL64CFLAGS = -m64 -O2 -ffreestanding -z max-page-size=0x1000 -mno-red-zone -
 		 -mno-sse -mno-sse2 -std=gnu99 -Wall -Wextra -mcmodel=large -Iinclude
 LD64FLAGS = -ffreestanding -O2 -nostdlib -lgcc -mcmodel=large -z max-page-size=0x1000
 
-QEMUARGS =  -m 4G -machine q35 -cpu EPYC\
+QEMUARGS = -m 4G -machine q35 -enable-kvm -cpu host -smp 2\
 	   -drive if=pflash,format=raw,unit=0,file=$(OVMFDIR)/OVMF_CODE.fd,readonly=on\
 	   -drive if=pflash,format=raw,unit=1,file=$(OVMFDIR)/OVMF_VARS.fd\
 	   -cdrom noyau.iso
@@ -103,5 +103,5 @@ run: image
 	qemu-system-x86_64 $(QEMUARGS) 
 
 run_legacy: image
-	qemu-system-x86_64 -m 4G -machine q35 -cpu EPYC -cdrom noyau.iso
+	qemu-system-x86_64 -m 4G -cpu EPYC -cdrom noyau.iso
 

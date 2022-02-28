@@ -46,6 +46,8 @@ struct pci_header_type0 {
 	uint8_t capabilities_ptr;
 	uint8_t reserved[3];
 
+	uint32_t reserved0;
+
 	uint8_t intline;
 	uint8_t intpin;
 	uint8_t mingnt;

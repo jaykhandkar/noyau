@@ -23,7 +23,7 @@ void kernel_entry(unsigned long addr)
 
 	addr = (unsigned long) phys_to_virt((void *)addr);
 	for (tag = (struct multiboot_tag *) (addr + 8); tag->type != MULTIBOOT_TAG_TYPE_END;
-			tag = (struct multiboot_tag *)((void *)tag + ((tag->size + 7) & ~7))) {
+	     tag = (struct multiboot_tag *)((void *)tag + ((tag->size + 7) & ~7))) {
 		switch (tag->type) {
 			case MULTIBOOT_TAG_TYPE_FRAMEBUFFER:
 			{
@@ -65,9 +65,9 @@ void kernel_entry(unsigned long addr)
 
 
 	clear(&rgb_fb);
-	printk("hello from long mode.\n");
+	//printk("hello from long mode.\n");
 	
-	if (mmap_tag != NULL) {
+	/*if (mmap_tag != NULL) {
 		multiboot_memory_map_t *mmap;
 		char *mem_type[6] = { 0, "MULTIBOOT_MEMORY_AVAILABLE", "MULTIBOOT_MEMORY_RESERVED", "MULTIBOOT_MEMORY_ACPI_RECLAIMABLE",
 			"MULTIBOOT_MEMORY_NVS", "MULTIBOOT_MEMORY_BADRAM" };
@@ -75,19 +75,19 @@ void kernel_entry(unsigned long addr)
 
 		printk("\nmemory map:\n");
 		for (mmap = mmap_tag->entries;(void *) mmap < ((void *) mmap_tag + mmap_tag->size);
-				mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
+		     mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
 			if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
 				total_usable_mem += mmap->len;
 			}
 
 			printk("start addr: 0x%lx | length: 0x%lx | type: %s\n", mmap->addr, mmap->len, 
-					mmap->type < 6 && mmap->type > 0 ? mem_type[mmap->type] : "(undefined)");	
+				mmap->type < 6 && mmap->type > 0 ? mem_type[mmap->type] : "(undefined)");	
 		}
 
 		printk("total usable memory = %d MB\n", total_usable_mem / MB);
 	} else {
 		printk("no memory map received from grub\n");
-	}
+	}*/
 
 	if (rsdp_tag == NULL) {
 		printk("\nRSDP not received from GRUB\n");
@@ -143,5 +143,48 @@ void kernel_entry(unsigned long addr)
 		printk("\nLAPIC base = 0x%x\n", madt->lapic_base);
 		if (madt->flags == 0x1)
 			printk("chipset has a legacy dual 8259\n");
+		void *madt_end = (void *)madt + madt->header.Length;
+
+		for (struct MADT_ICS_HDR *hdr = (struct MADT_ICS_HDR *)madt->ic_structure; 
+		    (void *)hdr < madt_end; hdr = (void *)hdr + hdr->length) {
+			switch(hdr->type) {
+				case 0x0:
+				{
+					struct MADT_LAPIC *lapic = (struct MADT_LAPIC*) hdr;
+					printk("processor local APIC | id = 0x%x | flags = 0x%x\n", lapic->apic_id, lapic->flags);
+					break;
+				}
+				case 0x1:
+				{
+					struct MADT_IOAPIC *ioapic = (struct MADT_IOAPIC *)hdr;
+					printk("I/O APIC | id = 0x%x | addr = 0x%x | gsi base = %d\n", ioapic->ioapic_id, ioapic->ioapic_addr, ioapic->gsi_base);
+					break;
+				}
+				case 0x2:
+				{
+					struct MADT_ISO *iso = (struct MADT_ISO *) hdr;
+					printk("interrupt source override | irq = %d | GSI = %d\n", iso->source, iso->gsi);
+					break;
+				}
+				case 0x3:
+				{
+					struct MADT_NMI_SRC *nmi = (struct MADT_NMI_SRC *) hdr;
+					printk("NMI source | gsi = %d\n", nmi->gsi);
+					break;
+				}
+				case 0x4:
+				{
+					struct MADT_LAPIC_NMI *lapic_nmi = (struct MADT_LAPIC_NMI *) hdr;
+					printk("local APIC NMI | LINT[%d]\n", lapic_nmi->lint);
+					break;
+				}
+				case 0x5:
+				{
+					struct MADT_LAPIC_ADDR *addr = (struct MADT_LAPIC_ADDR *) hdr;
+					printk("local APIC addr override | addr = 0x%x\n", addr->lapic_addr);
+					break;
+				}
+			}
+		}
 	}
 }

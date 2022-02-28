@@ -32,9 +32,11 @@ int have_cpuid();
 #define PAGE_OFFSET (0xffff800000000000)
 
 /* load the 64 bit higher half kernel, assuming - 
- * higher half starts at PAGE_OFFSET 
- * kernel can be loaded within first 10 MB
- * kernel wants to be loaded after loader */
+ * - higher half starts at PAGE_OFFSET 
+ * - kernel can be loaded within first 10 MB
+ * - kernel wants to be loaded after loader 
+ *   TODO: switch to fully virtual kernel mappings so that kernel can
+ *   be loaded anywhere in physical memory which has enough space*/
 
 void loader_main(unsigned long magic, unsigned long addr) 
 {
@@ -59,7 +61,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 
 	mbi_size = *(uint32_t *) addr;
 	for (tag = (struct multiboot_tag *) (addr + 8); tag->type != MULTIBOOT_TAG_TYPE_END;
-			tag = (struct multiboot_tag *)((void *)tag + ((tag->size + 7) & ~7))) {
+	     tag = (struct multiboot_tag *)((void *)tag + ((tag->size + 7) & ~7))) {
 		switch (tag->type) {
 			case MULTIBOOT_TAG_TYPE_FRAMEBUFFER:
 			{
@@ -130,7 +132,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 
 		printk("\nmemory map:\n");
 		for (mmap = mmap_tag->entries;(void *) mmap < ((void *) mmap_tag + mmap_tag->size);
-				mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
+		     mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
 			if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
 				total_usable_mem += mmap->len;
 			}
@@ -149,14 +151,14 @@ void loader_main(unsigned long magic, unsigned long addr)
 	size_t sz = hdr->e_phnum * hdr->e_phentsize;
 	
 	if (memcmp(&hdr->e_ident[EI_MAG0], ELFMAG, SELFMAG) != 0 || hdr->e_ident[EI_CLASS] != ELFCLASS64 || 
-			hdr->e_ident[EI_DATA] != ELFDATA2LSB || hdr->e_type != ET_EXEC || hdr->e_machine != EM_X86_64 ||
-			hdr->e_version != EV_CURRENT) {
+	    hdr->e_ident[EI_DATA] != ELFDATA2LSB || hdr->e_type != ET_EXEC || hdr->e_machine != EM_X86_64 ||
+	    hdr->e_version != EV_CURRENT) {
 		printk("loader: error: invalid ELF64 file received\n");
 		return;
 	} 
 
 	for (Elf64_Phdr *phdr = phdrs;(char *) phdr < (char *)phdrs + sz; 
-			phdr = (Elf64_Phdr *)((void *)phdr + hdr->e_phentsize)) {
+	     phdr = (Elf64_Phdr *)((void *)phdr + hdr->e_phentsize)) {
 		if ((unsigned long) phdr->p_paddr < (unsigned long) kernel_begin)
 			kernel_begin = (void *)(unsigned long) phdr->p_paddr;
 		if ((unsigned long)(phdr->p_paddr + phdr->p_memsz) > (unsigned long) kernel_end)
@@ -165,18 +167,18 @@ void loader_main(unsigned long magic, unsigned long addr)
 
 	/* unlikely - loader grew big enough to enter space where kernel wants to be loaded */
 	if (((unsigned long) &_loaderend >= (unsigned long) kernel_begin && 
-			(unsigned long) &_loaderend < (unsigned long) kernel_end) || 
-			((unsigned long) &_loaderstart >= (unsigned long) kernel_begin &&
-			(unsigned long) &_loaderstart < (unsigned long) kernel_end) ) {
+	   (unsigned long) &_loaderend < (unsigned long) kernel_end) || 
+	   ((unsigned long) &_loaderstart >= (unsigned long) kernel_begin &&
+	   (unsigned long) &_loaderstart < (unsigned long) kernel_end) ) {
 		printk("\nloader: error: loader and kernel overlap\n");
 		return;
 	}
 
 	/* make sure kernel doesn't want to be loaded inside loader */
 	if (((unsigned long) kernel_begin >= (unsigned long) &_loaderstart && 
-			(unsigned long) kernel_begin < (unsigned long) &_loaderend) || 
-			((unsigned long) kernel_end >= (unsigned long) &_loaderstart &&
-			(unsigned long) kernel_end < (unsigned long) &_loaderend) ) {
+	   (unsigned long) kernel_begin < (unsigned long) &_loaderend) || 
+	   ((unsigned long) kernel_end >= (unsigned long) &_loaderstart &&
+           (unsigned long) kernel_end < (unsigned long) &_loaderend) ) {
 		printk("\nloader: error: loader and kernel overlap\n");
 		return;
 	}
@@ -188,15 +190,15 @@ void loader_main(unsigned long magic, unsigned long addr)
 	}
 
 	for (mmap = mmap_tag->entries;(void *) mmap < ((void *) mmap_tag + mmap_tag->size);
-			mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
+	     mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
 		if (((unsigned long)kernel_begin >= mmap->addr && (unsigned long)kernel_begin < mmap->addr + mmap->len && 
-					(unsigned long)kernel_end > mmap->addr && 
-					(unsigned long)kernel_end < mmap->addr + mmap->len )) {
+		   (unsigned long)kernel_end > mmap->addr && 
+		   (unsigned long)kernel_end < mmap->addr + mmap->len )) {
 			kernel_mmap_region = mmap;
 		}
 		if (((unsigned long)&_loaderstart >= mmap->addr && (unsigned long)&_loaderstart < mmap->addr + mmap->len && 
-					(unsigned long)&_loaderend > mmap->addr && 
-					(unsigned long)&_loaderend < mmap->addr + mmap->len )) {
+		   (unsigned long)&_loaderend > mmap->addr && 
+		   (unsigned long)&_loaderend < mmap->addr + mmap->len )) {
 			loader_mmap_region = mmap;
 		}
 
@@ -220,19 +222,19 @@ void loader_main(unsigned long magic, unsigned long addr)
 			kernel_module_space = kernel_end;
 		/* check if it can fit right after loader */
 		else if ((unsigned long) &_loaderend + kernel_elf_size < loader_mmap_region->addr + loader_mmap_region->len &&
-				(unsigned long) &_loaderend + kernel_elf_size < (unsigned long)kernel_begin)
+			(unsigned long) &_loaderend + kernel_elf_size < (unsigned long)kernel_begin)
 			kernel_module_space = (void *)(unsigned long) &_loaderend;
 		/* finally scan all regions */
 		else {
 			for (mmap = mmap_tag->entries;(void *) mmap < ((void *) mmap_tag + mmap_tag->size);
-					mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
+		             mmap = (multiboot_memory_map_t *) ((void *)mmap + mmap_tag->entry_size)) {
 				if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE) {
 					if (mmap->len > kernel_elf_size && kernel_module_space == NULL
 							&& (mmap->addr & 0xffffffff00000000) == 0
 							&& (mmap->addr > (unsigned long)&_loaderend || 
-								(unsigned long) mmap->addr + kernel_elf_size < (unsigned long)&_loaderstart)
+							   (unsigned long) mmap->addr + kernel_elf_size < (unsigned long)&_loaderstart)
 							&& (mmap->addr > (unsigned long) kernel_end || 
-								(unsigned long) mmap->addr + kernel_elf_size < (unsigned long) kernel_begin))
+						           (unsigned long) mmap->addr + kernel_elf_size < (unsigned long) kernel_begin))
 						kernel_module_space = (void *) (unsigned long) mmap->addr;
 				}
 			}
@@ -253,7 +255,7 @@ void loader_main(unsigned long magic, unsigned long addr)
 	kernel_entry = (void *) (unsigned long) (hdr->e_entry - PAGE_OFFSET);
 	printk("\nloader: segments described by program headers in kernel elf file:\n");
 	for (Elf64_Phdr *phdr = phdrs;(char *) phdr < (char *)phdrs + sz; 
-			phdr = (Elf64_Phdr *)((void *)phdr + hdr->e_phentsize)) {
+	     phdr = (Elf64_Phdr *)((void *)phdr + hdr->e_phentsize)) {
 		switch(phdr->p_type) {
 			case PT_LOAD:
 			{

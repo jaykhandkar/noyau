@@ -49,14 +49,14 @@ void enumerate_pci(struct ACPIMCFG *mcfg)
 	}
 
 	size_t segment_groups = (mcfg->sdtheader.Length - sizeof(struct ACPISDTHeader)) / 16;
-	printk("\nnumber of PCI segment groups: %u\n", segment_groups);
+	//printk("\nnumber of PCI segment groups: %u\n", segment_groups);
 
 	for (size_t i = 0; i < segment_groups; i++) {
 		struct ACPIMCFG_BAR *base_addr = (struct ACPIMCFG_BAR *)((void *)mcfg->entries + (sizeof(struct ACPIMCFG_BAR) * i));			
-		printk("\nPCI segment group %u\n", base_addr->segment);
+		/*printk("\nPCI segment group %u\n", base_addr->segment);
 		printk("base address = 0x%lx\n", base_addr->base);
 		printk("start bus: %u\n", base_addr->bus_start);
-		printk("end bus: %u\n", base_addr->bus_end);
+		printk("end bus: %u\n", base_addr->bus_end);*/
 
 		printk("\nfunctions found in this PCI segment group:\n");
 		for (uint8_t bus = base_addr->bus_start; bus < base_addr -> bus_end; bus++) {
@@ -66,6 +66,7 @@ void enumerate_pci(struct ACPIMCFG *mcfg)
 							+ (dev << 15) + (func << 12)));
 					if (hdr->vendor_id != 0xFFFF) {
 						char *vendor_string;
+						uint8_t type = hdr->header_type & 0x7F;
 
 						switch(hdr->vendor_id) {
 							case 0x8086:
@@ -77,11 +78,30 @@ void enumerate_pci(struct ACPIMCFG *mcfg)
 							case 0x1022:
 								vendor_string = "Advanced Micro Devices, Inc. [AMD/ATI]";
 								break;
+							case 0xc0a9:
+								vendor_string = "Micron/Crucial Technology";
+								break;
+							case 0x1344:
+								vendor_string = "Micron Technology Inc";
+								break;
+							case 0x15b7:
+								vendor_string = "Sandisk Corp";
+								break;
 							default:
 								vendor_string = "";
 						}
-						printk("%04d:%04d.%04d 0x%04x 0x%02x 0x%02x 0x%02x %s %s\n", bus, dev, func, hdr->vendor_id, 
-								hdr->class, hdr->subclass, hdr->progif, vendor_string, get_class_name(hdr->class));
+						printk("%04d:%04d.%04d 0x%04x 0x%02x 0x%02x 0x%02x %s %s | ", bus, dev, func, hdr->vendor_id, 
+						       hdr->class, hdr->subclass, hdr->progif, vendor_string, get_class_name(hdr->class));
+						if (type == 0x0) {
+							struct pci_header_type0 *hdr0 = (struct pci_header_type0 *) hdr;
+							printk("interrupt pin = %d line = %d\n", hdr0->intpin, hdr0->intline);
+						} 
+						//printk("this is a type %d header\n", type);
+						else if (type == 0x1) {
+							printk("PCI-PCI Bridge");
+							struct pci_header_type1 *hdr1 = (struct pci_header_type1 *) hdr;
+							printk(" secondary bus = %d subordinate bus = %d\n", hdr1->secondary_bus, hdr1->subordinate_bus);
+						}
 					}
 				}
 			}
