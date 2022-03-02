@@ -47,6 +47,22 @@ KERNEL_OBJ_FILES += $(LIB_OBJ_FILES)
 KERNEL_OBJ_FILES += $(KERNEL_ASM_FILES:$(KERNEL_DIR)/%.S=$(BUILD_DIR)/%_s.o)
 KERNEL_OBJ_FILES += $(BUILD_DIR)/font64.o
 
+all: $(BUILD_DIR)/loader.bin $(BUILD_DIR)/kernel64.bin
+
+image: $(BUILD_DIR)/loader.bin $(BUILD_DIR)/kernel64.bin
+	cp $(BUILD_DIR)/loader.bin iso/boot/
+	cp $(BUILD_DIR)/kernel64.bin iso/boot/
+	grub-mkrescue -o noyau.iso iso
+
+run: image
+	qemu-system-x86_64 $(QEMUARGS) 
+
+run_legacy: image
+	qemu-system-x86_64 -m 4G -cdrom noyau.iso
+
+clean:
+	rm -rf $(BUILD_DIR)
+
 #recipes to build 64 bit kernel
 $(BUILD_DIR)/%_c.o: $(KERNEL_DIR)/%.c
 	mkdir -p $(@D)
@@ -86,22 +102,4 @@ $(BUILD_DIR)/loader.bin: $(LOADER_DIR)/linker.ld $(LOADER_OBJ_FILES)
 
 $(BUILD_DIR)/kernel64.bin: $(KERNEL_DIR)/kernel_link.ld $(KERNEL_OBJ_FILES) 
 	$(x86_64GNU)-gcc -T $(KERNEL_DIR)/kernel_link.ld -o $@ $(KERNEL_OBJ_FILES) $(LD64FLAGS)
-
-
-
-all: $(BUILD_DIR)/loader.bin $(BUILD_DIR)/kernel64.bin
-
-clean:
-	rm -rf $(BUILD_DIR)
-
-image: $(BUILD_DIR)/loader.bin $(BUILD_DIR)/kernel64.bin
-	cp $(BUILD_DIR)/loader.bin iso/boot/
-	cp $(BUILD_DIR)/kernel64.bin iso/boot/
-	grub-mkrescue -o noyau.iso iso
-
-run: image
-	qemu-system-x86_64 $(QEMUARGS) 
-
-run_legacy: image
-	qemu-system-x86_64 -m 4G -cpu EPYC -cdrom noyau.iso
 
